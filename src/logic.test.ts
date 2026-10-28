@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { demoPurchases, suppliers } from './data';
-import { bestSupplierForOrder, calculateTco, defaultWeights, estimateSavings, getAverageLeadDays, getOnTimeRate, getSpend, importPurchases, importSuppliers, rankSuppliers, rankTcoOptions, weightedScore } from './logic';
+import { bestSupplierForOrder, calculateTco, defaultWeights, estimateSavings, getAverageLeadDays, getOnTimeRate, getSpend, importPurchases, importSuppliers, rankSuppliers, rankTcoOptions, scenarioReportMetrics, weightedScore } from './logic';
 import { caseStudy } from './caseStudy';
 
 describe('procurement calculations', () => {
@@ -36,6 +36,7 @@ describe('procurement calculations', () => {
     expect(weightedScore(suppliers[0],suppliers,defaultWeights)).toBe(weightedScore(suppliers[0],suppliers,defaultWeights));
     const ranked=rankSuppliers(suppliers);expect(ranked).toHaveLength(suppliers.length);expect(ranked[0].score).toBeGreaterThanOrEqual(ranked[1].score);
     expect(ranked.every(r=>r.score>=0&&r.score<=100)).toBe(true);
+    expect(ranked.every(r=>!('deliveredCost' in r)&&!('savings' in r))).toBe(true);
   });
   it('chooses a cheaper per-order landed cost and preserves orders that are already cheaper',()=>{
     const supplier=suppliers.find(s=>s.id==='sup-001')!;
@@ -53,6 +54,15 @@ describe('procurement calculations', () => {
   it('never moves an order to a supplier with a higher landed cost',()=>{
     const categories=Object.fromEntries(['Electrical','Mechanical','Renewable energy','Fasteners'].map(category=>[category,100]));const estimate=estimateSavings(demoPurchases,suppliers,categories);
     expect(estimate.projectedSpend).toBeLessThanOrEqual(estimate.currentSpend);expect(estimate.savings).toBeGreaterThanOrEqual(0);
+  });
+  it('keeps baseline and projected delivery measures distinct for scenario reports',()=>{
+    const estimate=estimateSavings(demoPurchases,suppliers,{Electrical:100});
+    const report=scenarioReportMetrics(estimate,{onTimeRate:getOnTimeRate(demoPurchases),avgLeadDays:getAverageLeadDays(demoPurchases,suppliers)});
+    expect(report.currentSpend).toBe(getSpend(demoPurchases));
+    expect(report.projectedSpend).toBe(estimate.projectedSpend);
+    expect(report.projectedOnTimeRate).toBe(estimate.onTimeRate);
+    expect(report.projectedAvgLeadDays).toBe(estimate.avgLeadDays);
+    expect(report.baselineOnTimeRate).toBe(getOnTimeRate(demoPurchases));
   });
 });
 

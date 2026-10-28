@@ -2,7 +2,7 @@ import type { Purchase, Supplier } from './data';
 
 export interface Weights { price: number; shipping: number; leadTime: number; quality: number; reliability: number }
 export const defaultWeights: Weights = { price: 35, shipping: 15, leadTime: 20, quality: 15, reliability: 15 };
-export interface RankedSupplier { supplier: Supplier; score: number; savings: number; deliveredCost: number }
+export interface RankedSupplier { supplier: Supplier; score: number }
 
 /** TCO inputs use decimal rates (0.02 = 2%). Delay cost is probability-weighted. */
 export interface TcoInputs {
@@ -49,9 +49,7 @@ export function weightedScore(s: Supplier, all: Supplier[], weights: Weights = d
   return Math.round(score / total * 10) / 10;
 }
 export function rankSuppliers(all: Supplier[], weights: Weights = defaultWeights): RankedSupplier[] {
-  const bestPriceByCategory = new Map<string, number>();
-  for (const s of all) bestPriceByCategory.set(s.category, Math.min(bestPriceByCategory.get(s.category) ?? Infinity, s.price + s.shipping / 100));
-  return all.map(s => ({ supplier:s, score:weightedScore(s, all, weights), savings:Math.max(0,Math.round(((s.price + s.shipping / 100) - bestPriceByCategory.get(s.category)!) * 100) / 100), deliveredCost:Math.round((s.price + s.shipping / 100)*100)/100 })).sort((a,b) => b.score-a.score);
+  return all.map(s => ({ supplier:s, score:weightedScore(s, all, weights) })).sort((a,b) => b.score-a.score);
 }
 export function getSpend(purchases: Purchase[]): number { return Math.round(purchases.reduce((a,p)=>a+p.quantity*p.unitPrice+p.shipping,0)*100)/100; }
 export function getOnTimeRate(purchases: Purchase[]): number { const known=purchases.filter(p=>p.onTime!==undefined);return known.length?Math.round(known.filter(p=>p.onTime).length/known.length*1000)/10:0; }
@@ -72,6 +70,21 @@ export function estimateSavings(purchases: Purchase[], allSuppliers: Supplier[],
   const onTimeRate=purchases.length?Math.round(purchases.reduce((a,p)=>{const currentStatus=p.onTime===undefined?(allSuppliers.find(s=>s.id===p.supplierId)?.reliability??100)/100:(p.onTime?1:0);const best=bestSupplierForOrder(p,allSuppliers.filter(s=>s.category===p.category));const pct=best?Math.max(0,Math.min(100,allocation[p.category]??50))/100:0;return a+currentStatus*(1-pct)+(best?best.reliability/100:0)*pct;},0)/purchases.length*1000)/10:0;
   const avgLeadDays=purchases.length?Math.round(purchases.reduce((a,p)=>{const best=bestSupplierForOrder(p,allSuppliers.filter(s=>s.category===p.category));const pct=best?Math.max(0,Math.min(100,allocation[p.category]??50))/100:0;const current=allSuppliers.find(s=>s.id===p.supplierId)?.leadDays??0;return a+current*(1-pct)+(best?.leadDays??current)*pct;},0)/purchases.length*10)/10:0;
   return {currentSpend,projectedSpend:Math.round(projectedSpend*100)/100,savings,onTimeRate,avgLeadDays};
+}
+
+export function scenarioReportMetrics(
+  estimate: ReturnType<typeof estimateSavings>,
+  baseline: { onTimeRate: number; avgLeadDays: number },
+) {
+  return {
+    currentSpend: estimate.currentSpend,
+    projectedSpend: estimate.projectedSpend,
+    savings: estimate.savings,
+    baselineOnTimeRate: baseline.onTimeRate,
+    projectedOnTimeRate: estimate.onTimeRate,
+    baselineAvgLeadDays: baseline.avgLeadDays,
+    projectedAvgLeadDays: estimate.avgLeadDays,
+  };
 }
 
 export interface ImportResult<T> { rows:T[]; errors:string[]; skipped:number }
