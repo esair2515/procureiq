@@ -38,10 +38,20 @@ Rates are decimal inputs (0.02 means 2%). The model rounds displayed component t
 - **Executive summary and case study:** recommendation, cost components, risk inputs, alternatives, assumptions, and limitations, all from the same deterministic TCO calculation.
 - **Insights:** plain-English observations are generated from local data and formulas; no LLM supplies or invents figures.
 - **Imports and exports:** validated CSV/Excel purchase and supplier import; CSV and PDF report export.
+- **Company workspaces:** create and switch between named company workspaces (for example GE Vernova) from the workspace button at the top of the sidebar. Every workspace has its own supplier and purchase records. New workspaces start empty; import supplier records first, then import purchases that refer to those supplier IDs. The original Northstar Manufacturing workspace remains the clearly labeled synthetic demo.
 
 ## Synthetic demo data
 
-The base portfolio has 18 synthetic supplier records and 144 generated purchase records with industrial equipment, electrical, mechanical, fastener, and renewable energy examples. Dates cover November 2025 through October 2026. Values are representative examples created for this portfolio project and are not customer data, quotations, or real supplier performance. Importing app data stores it in that browser's local storage. **Restore synthetic demo** resets the local records.
+The base portfolio has 18 synthetic supplier records and 144 generated purchase records with industrial equipment, electrical, mechanical, fastener, and renewable energy examples. Dates cover November 2025 through October 2026. Values are representative examples created for this portfolio project and are not customer data, quotations, or real supplier performance. Data and workspace names stay in that browser's local storage; there is no account, server-side database, or sharing across browsers. **Restore synthetic demo** resets the Northstar demo records. The Executive summary and Case study remain fixed synthetic examples and show a notice when viewed from another workspace.
+
+### Using this for a GE application
+
+1. Open the workspace switcher above the sidebar navigation and create **GE Vernova** (or the specific team/company name you want to demonstrate).
+2. Select **Import data** and import the company’s supplier CSV/Excel file. Supplier IDs must be unique within that workspace.
+3. Import its purchase records, using the same `supplierId` values and matching category names.
+4. Review the dashboard, analytics, supplier rankings, and scenario planner. These calculations then use the active workspace's records.
+
+The public portfolio site is a browser-only demonstration. Do not upload confidential company, employee, pricing, or other restricted procurement data: anyone using the public site has a separate local browser store, and the app has no authentication, access controls, or enterprise data protections. Use synthetic or approved non-sensitive records only. A real shared GE deployment would require an authenticated backend and security review.
 
 ## Run locally
 
